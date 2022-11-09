@@ -14,6 +14,7 @@ Following the capabilities of this action:
 
 - **Private repositories:**: It is possible to use private Github repositories by providing a `github_token`
 
+
 ## Action inputs:
 
 <table>
@@ -72,24 +73,6 @@ Following the capabilities of this action:
     <td>(Mandatory)The Azure Container Registry name</td>
     <td></td>
   </tr>
-
-  <tr>
-    <td><code>tenant</code><br/></td>
-    <td>(Mandatory)The ACR tenant</td>
-    <td></td>
-  </tr>
-
-  <tr>
-    <td><code>service_principal</code><br/></td>
-    <td>(Mandatory) The Service Principal credentials</td>
-    <td></td>
-  </tr>
-
-  <tr>
-    <td><code>service_principal_password</code><br/></td>
-    <td>(Mandatory) The Service Principal credentials </td>
-    <td></td>
-  </tr>  
   
   <tr>
     <td><code>build_args</code><br/></td>
@@ -101,18 +84,10 @@ Following the capabilities of this action:
 
 ## Example usage
 
-Create an SP with Contributor access to the Azure Container Registry
-
-```bash
-az ad sp create-for-rbac -n "acrtask0" --skip-assignment
-az role assignment create --assignee <spID> --scope <resourceID of the ACR> --role "Contributor"
-```
+The action expects the use of the `azure/login` action prior to calling this action, to login into Azure. The login can be done either with Service Principal or [OIDC authentication](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-azure).
 
 In your repository, create the following secrets (or set them in clear in the workflow definition):
 
-- service_principal
-- service_principal_password
-- tenant
 - registry
 - repository
 - (optional, for accessing private repositories) git_access_token 
@@ -129,13 +104,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: 'Az CLI login'
+      uses: azure/login@v1
+      with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+
       - name: ACR build
         id: acr
         uses: azure/acr-build@v1
         with:
-          service_principal: ${{ secrets.service_principal }}
-          service_principal_password: ${{ secrets.service_principal_password }}
-          tenant: ${{ secrets.tenant }}
           registry: ${{ secrets.registry }}
           repository: ${{ secrets.repository }}
           image: image
